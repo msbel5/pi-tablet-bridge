@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Pi Tablet Bridge</string>
+    <string name="frame_description">Mirrored Pi display</string>
+    <string name="status_searching">Searching for Pi...</string>
+    <string name="metrics_initial">Waiting for frames</string>
+    <string name="keyboard_button">Keyboard</string>
+    <string name="keyboard_hint">Type here to send text to the Pi</string>
+    <string name="key_enter">Enter</string>
+    <string name="key_tab">Tab</string>
+    <string name="key_backspace">Bksp</string>
+    <string name="key_esc">Esc</string>
+    <string name="key_left">Left</string>
+    <string name="key_right">Right</string>
+    <string name="key_up">Up</string>
+    <string name="key_down">Down</string>
+</resources>

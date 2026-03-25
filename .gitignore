@@ -1,0 +1,16 @@
+__pycache__/
+*.pyc
+*.pyo
+*.swp
+.pytest_cache/
+.idea/
+.vscode/
+.gradle/
+.android-sdk/
+android-app/.gradle-bootstrap/
+local.properties
+android-app/app/build/
+android-app/build/
+build/
+dist/
+*.apk

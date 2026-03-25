@@ -1,37 +1,81 @@
 # Pi Tablet Bridge
 
-Turn an Android tablet into a full I/O peripheral for Raspberry Pi — touchscreen display, camera, microphone, speakers, and sensors, all over USB + LAN.
+Turn an old Android tablet into a Pi display and input device over USB or LAN.
 
-## Why?
+## What is implemented
 
-Old Android tablets (even Android 4.1) have hardware that's still useful: 10" touchscreen, cameras, microphone, speaker, gyroscope. This project makes all of that accessible from a Raspberry Pi, turning a $0 tablet into a $200 peripheral.
+- TCP transport with USB primary (`adb forward`) and LAN fallback.
+- Pi screen capture with `grim`, Pillow JPEG conversion, and frame streaming.
+- Tablet fullscreen frame rendering with latest-frame decode/drop behavior.
+- Tablet touch gestures forwarded to Pi mouse actions.
+- Tablet keyboard dialog forwarding text and special keys.
+- Pi auto-setup for detect/install/launch/forward.
 
-## Status
+Deferred features from `PRD.md` remain out of scope for this MVP: camera, microphone, speakers, sensors, and GUI management.
 
-**Early development** — see [PRD.md](PRD.md) for full requirements.
+## Repo layout
 
-## Hardware
+- `pi-side/` Python bridge server.
+- `android-app/` Java/Gradle Android project.
+- `PRD.md` product requirements and scope.
 
-- **Pi:** Raspberry Pi 5, Debian 13 Trixie
-- **Tablet:** Huawei MediaPad 10 Link S10-201u (Android 4.1, API 16)
-- **Connection:** USB cable + optional WiFi LAN
+## Pi-side requirements
 
-## Quick Start
+- Python 3.10+ (target runtime is Python 3.11+ on the Pi).
+- `grim`
+- `ydotool` plus `ydotoold` on Wayland, or `xdotool` on X11
+- ADB available at `/usr/lib/android-sdk/platform-tools/adb` or on `PATH`
+- Pillow installed: `pip install -r pi-side/requirements.txt`
+
+## Android build requirements
+
+- JDK 11 available locally.
+- Android SDK Platform 28 and Build Tools 30.0.3.
+- `android-app/gradlew` bootstraps Gradle 6.7.1 automatically.
+
+The wrapper script prefers `/usr/lib/jvm/java-11-openjdk-amd64` when `JAVA_HOME` is not set. If your SDK lives outside the repo, export `ANDROID_HOME` and `ANDROID_SDK_ROOT`.
+
+## Build the APK
 
 ```bash
-# Pi side
-cd pi-side
-pip install -r requirements.txt
-python bridge_server.py
-
-# The script will:
-# 1. Detect connected tablet via ADB
-# 2. Install the Bridge APK if needed
-# 3. Launch the app on tablet
-# 4. Start mirroring Pi screen to tablet
-# 5. Forward tablet touch events to Pi
+cd android-app
+export ANDROID_HOME="$(pwd)/../.android-sdk"
+export ANDROID_SDK_ROOT="$ANDROID_HOME"
+./gradlew testDebugUnitTest assembleDebug
 ```
 
-## License
+Debug APK output:
 
-MIT
+```bash
+android-app/app/build/outputs/apk/debug/app-debug.apk
+```
+
+Install to the tablet:
+
+```bash
+/usr/lib/android-sdk/platform-tools/adb install -r android-app/app/build/outputs/apk/debug/app-debug.apk
+/usr/lib/android-sdk/platform-tools/adb shell am start -n com.pitabletbridge/.MainActivity
+```
+
+## Run the Pi bridge
+
+```bash
+cd pi-side
+python3 -m unittest discover tests
+python3 bridge_server.py connect
+```
+
+Useful commands:
+
+```bash
+python3 bridge_server.py status
+python3 bridge_server.py install-apk
+python3 bridge_server.py connect --apk ../android-app/app/build/outputs/apk/debug/app-debug.apk
+```
+
+## Runtime notes
+
+- USB transport uses the tablet-side `ServerSocket` on port `19876`.
+- LAN discovery uses UDP broadcast on `19877`.
+- The Pi binds LAN TCP on its detected LAN IP so it can still use `adb forward tcp:19876 tcp:19876` on `127.0.0.1`.
+- If `ydotool` or `xdotool` is missing, display streaming still runs but input injection is degraded.
